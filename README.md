@@ -2,7 +2,7 @@
 
 ## What is it
 
-`ansible-debug` allows you to debug Ansible Galaxy roles using GitHub Actions workflows on the localhost.
+`galaxy-debug` allows you to debug Ansible Galaxy roles using GitHub Actions workflows on the localhost.
 
 ## How to use
 
