@@ -4,6 +4,14 @@
 
 `galaxy-debug` allows you to debug Ansible Galaxy roles using GitHub Actions workflows on the localhost.
 
+## How to install
+
+```
+curl https://raw.githubusercontent.com/noobient/galaxy-debug/main/galaxy-debug -o "${HOME}/.local/bin/galaxy-debug"
+```
+
+You might have to restart your terminal emulator, before it appears in your PATH.
+
 ## How to use
 
 For an example, please see:
