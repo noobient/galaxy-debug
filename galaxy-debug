@@ -39,13 +39,28 @@ echo -e "\nRunning Galaxy role tests on:\n - Role: \e[36m${role}\e[0m\n - Platfo
 
 # Fire up instance
 CONT_ID=$(docker run --rm -v $(pwd):/repo -v /sys/fs/cgroup:/sys/fs/cgroup:ro --tmpfs /tmp --tmpfs /run --privileged --detach "bviktor/ansible-systemd-${platform}")
+
 # Install dependencies
 docker exec "${CONT_ID}" bash -c "if [ -f requirements.yml ]; then ansible-galaxy role install --force -r requirements.yml -p ..; fi"
+
 # Don't exit the container if errors occur
 set +e
+
+# Check for environment file
+ENV_FILE='tests/env.list'
+
+if [ -f "${ENV_FILE}" ]
+then
+    ENV_INC="--env-file ${ENV_FILE}"
+else
+    ENV_INC=''
+fi
+
 # Run the actual tests
-docker exec "${CONT_ID}" bash -c "ANSIBLE_ROLES_PATH=.. ANSIBLE_FORCE_COLOR=true ansible-playbook ${arguments[*]} tests/main.yml"
+docker exec ${ENV_INC} "${CONT_ID}" bash -c "ANSIBLE_ROLES_PATH=.. ANSIBLE_FORCE_COLOR=true ansible-playbook ${arguments[*]} tests/main.yml"
+
 # Let us check stuff before exiting
 docker exec -it "${CONT_ID}" bash
+
 # Stop instance
 docker stop "${CONT_ID}"
