@@ -37,8 +37,8 @@ role=$(basename ${PWD} | sed 's/ansible-galaxy-//')
 
 echo -e "\nRunning Galaxy role tests on:\n - Role: \e[36m${role}\e[0m\n - Platform: \e[36m${platform}\e[0m\n"
 
-# Fire up instance
-CONT_ID=$(docker run --rm -v $(pwd):/repo -v /sys/fs/cgroup:/sys/fs/cgroup:ro --tmpfs /tmp --tmpfs /run --privileged --detach "bviktor/ansible-systemd-${platform}")
+# Fire up instance, need 'sleep infinity' to keep it running with while detached
+CONT_ID=$(docker run --rm -v $(pwd):/repo -v /sys/fs/cgroup:/sys/fs/cgroup:ro --tmpfs /tmp --tmpfs /run --privileged --detach "bviktor/ansible-systemd-${platform}" sleep infinity)
 
 # Install dependencies
 docker exec "${CONT_ID}" bash -c "if [ -f requirements.yml ]; then ansible-galaxy role install --force -r requirements.yml -p ..; fi"
