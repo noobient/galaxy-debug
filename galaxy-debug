@@ -37,8 +37,10 @@ role=$(basename ${PWD} | sed 's/ansible-galaxy-//')
 
 echo -e "\nRunning Galaxy role tests on:\n - Role: \e[36m${role}\e[0m\n - Platform: \e[36m${platform}\e[0m\n"
 
-# Fire up instance, need 'sleep infinity' to keep it running with while detached
-CONT_ID=$(docker run --rm -v $(pwd):/repo -v /sys/fs/cgroup:/sys/fs/cgroup:ro --tmpfs /tmp --tmpfs /run --privileged --detach "bviktor/ansible-systemd-${platform}" sleep infinity)
+# Fire up instance
+# TODO since WSL has cgroups v2, we need rw (and no --privileged), otherwise it fails
+# https://github.com/moby/moby/issues/42040
+CONT_ID=$(docker run --rm -v $(pwd):/repo -v /sys/fs/cgroup:/sys/fs/cgroup:rw --tmpfs /tmp --tmpfs /run --detach "bviktor/ansible-systemd-${platform}")
 
 # Install dependencies
 docker exec "${CONT_ID}" bash -c "if [ -f requirements.yml ]; then ansible-galaxy role install --force -r requirements.yml -p ..; fi"
