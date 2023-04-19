@@ -2,18 +2,48 @@
 
 set -eu
 
-docker --version &> /dev/null || true
+function find_exec ()
+{
+    RET=0
+    podman --version &> /dev/null && RET=1 || true
 
-if [ $? -ne 0 ]
+    if [ ${RET} -eq 1 ]
+    then
+        echo 'podman'
+    else
+        RET=0
+        docker --version &> /dev/null && RET=1 || true
+
+        if [ ${RET} -eq 1 ]
+        then
+            echo 'docker'
+        else
+            echo ''
+        fi
+    fi
+}
+
+export exec=$(find_exec)
+
+if [ -z "${exec}" ]
 then
-    echo -e "\e[31mError! Docker not found. Ensure Docker is installed and running.\e[0m"
+    echo -e "\e[31mError! Container executable not found. Ensure Podman (preferred) or Docker is installed and running.\e[0m"
     exit 1
+fi
+
+# TODO since WSL has cgroups v2, we need rw (and no --privileged), otherwise it fails
+# https://github.com/moby/moby/issues/42040
+if [ "${exec}" == 'docker' ]
+then
+    extra_flags='-v /sys/fs/cgroup:/sys/fs/cgroup:rw --tmpfs /tmp --tmpfs /run'
+else
+    extra_flags=''
 fi
 
 if [ ! -f 'tests/main.yml' ]
 then
     echo -e "\e[31mError! Tests not found. Ensure you're in the right directory.\e[0m"
-    exit 1
+    exit 2
 fi
 
 arguments=()
@@ -38,12 +68,10 @@ role=$(basename ${PWD} | sed 's/ansible-galaxy-//')
 echo -e "\nRunning Galaxy role tests on:\n - Role: \e[36m${role}\e[0m\n - Platform: \e[36m${platform}\e[0m\n"
 
 # Fire up instance
-# TODO since WSL has cgroups v2, we need rw (and no --privileged), otherwise it fails
-# https://github.com/moby/moby/issues/42040
-CONT_ID=$(docker run --rm -v $(pwd):/repo -v /sys/fs/cgroup:/sys/fs/cgroup:rw --tmpfs /tmp --tmpfs /run --detach "bviktor/ansible-systemd-${platform}")
+CONT_ID=$(${exec} run --rm -v $(pwd):/repo ${extra_flags} --detach "bviktor/ansible-systemd-${platform}")
 
 # Install dependencies
-docker exec "${CONT_ID}" bash -c "if [ -f requirements.yml ]; then ansible-galaxy role install --force -r requirements.yml -p ..; fi"
+${exec} exec "${CONT_ID}" bash -c "if [ -f requirements.yml ]; then ansible-galaxy role install --force -r requirements.yml -p ..; fi"
 
 # Don't exit the container if errors occur
 set +e
@@ -59,10 +87,10 @@ else
 fi
 
 # Run the actual tests
-docker exec ${ENV_INC} "${CONT_ID}" bash -c "ANSIBLE_ROLES_PATH=.. ANSIBLE_FORCE_COLOR=true ansible-playbook ${arguments[*]} tests/main.yml"
+${exec} exec ${ENV_INC} "${CONT_ID}" bash -c "ANSIBLE_ROLES_PATH=.. ANSIBLE_FORCE_COLOR=true ansible-playbook ${arguments[*]} tests/main.yml"
 
 # Let us check stuff before exiting
-docker exec -it "${CONT_ID}" bash
+${exec} exec -it "${CONT_ID}" bash
 
 # Stop instance
-docker stop "${CONT_ID}"
+${exec} stop "${CONT_ID}"
