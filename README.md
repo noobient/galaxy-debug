@@ -12,6 +12,8 @@ curl https://raw.githubusercontent.com/noobient/galaxy-debug/main/galaxy-debug -
 
 You might have to restart your terminal emulator, before it appears in your PATH.
 
+You also have to install **Podman** or **Docker**. Podman is recommended, as Docker will occasionally set wrong ownership on files under `/run/user`.
+
 ## How to use
 
 For an example, please see:
