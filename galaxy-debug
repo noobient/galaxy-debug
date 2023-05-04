@@ -2,6 +2,9 @@
 
 set -eu
 
+export PORT_FILE='tests/port.list'
+export ENV_FILE='tests/env.list'
+
 function find_exec ()
 {
     RET=0
@@ -21,6 +24,45 @@ function find_exec ()
             echo ''
         fi
     fi
+}
+
+function check_newline ()
+{
+    if [[ $(tail -c1 "${1}" | wc -l) -gt 0 ]]
+    then
+        echo 1
+    else
+        echo 0
+    fi
+}
+
+function parse_ports ()
+{
+    port_str=""
+
+    if [ ! -f "${1}" ]
+    then
+        echo "${port_str}"
+        return
+    fi
+
+    if [ $(check_newline "${1}") -eq 0 ]
+    then
+        echo '' >> "${1}"
+    fi
+
+    while read -r line
+    do
+        if [ ! -z "$port_str" ]
+        then
+            port_str+=" "
+        fi
+
+        [[ $line = \#* ]] || [ -z "$line" ] && continue # skip comments & empty lines
+        port_str+="-p ${line}"
+    done < "${1}"
+
+    echo "${port_str}"
 }
 
 export exec=$(find_exec)
@@ -81,8 +123,11 @@ fi
 
 set -e
 
+# Check for port file
+PORTS=$(parse_ports "${PORT_FILE}")
+
 # Fire up instance
-CONT_ID=$(${exec} run --rm -v $(pwd):/repo ${extra_flags} --detach "bviktor/ansible-systemd-${platform}")
+CONT_ID=$(${exec} run --rm -v $(pwd):/repo ${PORTS} ${extra_flags} --detach "bviktor/ansible-systemd-${platform}")
 
 # Install dependencies
 ${exec} exec "${CONT_ID}" bash -c "if [ -f requirements.yml ]; then ansible-galaxy role install --force -r requirements.yml -p ..; fi"
@@ -91,8 +136,6 @@ ${exec} exec "${CONT_ID}" bash -c "if [ -f requirements.yml ]; then ansible-gala
 set +e
 
 # Check for environment file
-ENV_FILE='tests/env.list'
-
 if [ -f "${ENV_FILE}" ]
 then
     ENV_INC="--env-file ${ENV_FILE}"
