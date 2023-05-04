@@ -67,6 +67,20 @@ role=$(basename ${PWD} | sed 's/ansible-galaxy-//')
 
 echo -e "\nRunning Galaxy role tests on:\n - Role: \e[36m${role}\e[0m\n - Platform: \e[36m${platform}\e[0m\n"
 
+# Pull latest image
+set +e
+
+${exec} pull docker.io/bviktor/ansible-systemd-fedora:37
+
+if [ $? -eq 125 ]
+then
+    echo "Error pulling Docker image! Make sure to login to Docker Hub with '${exec} login docker.io' first."
+    echo "If you have MFA enabled, generate an access token at https://hub.docker.com/settings/security and use that instead of your password."
+    exit 1
+fi
+
+set -e
+
 # Fire up instance
 CONT_ID=$(${exec} run --rm -v $(pwd):/repo ${extra_flags} --detach "bviktor/ansible-systemd-${platform}")
 
