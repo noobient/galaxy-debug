@@ -112,7 +112,7 @@ echo -e "\nRunning Galaxy role tests on:\n - Role: \e[36m${role}\e[0m\n - Platfo
 # Pull latest image
 set +e
 
-${exec} pull docker.io/bviktor/ansible-systemd-fedora:37
+${exec} pull "docker.io/bviktor/ansible-systemd-${platform}"
 
 if [ $? -eq 125 ]
 then
