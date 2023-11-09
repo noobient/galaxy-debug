@@ -89,7 +89,7 @@ then
 fi
 
 arguments=()
-platform="fedora:37"
+platform="fedora:38"
 
 while [[ $# -gt 0 ]]
 do
