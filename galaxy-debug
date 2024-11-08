@@ -107,7 +107,7 @@ done
 
 role=$(basename ${PWD} | sed 's/ansible-galaxy-//')
 
-echo -e "\nRunning Galaxy role tests on:\n - Role: \e[36m${role}\e[0m\n - Platform: \e[36m${platform}\e[0m\n"
+echo -e "\nRunning Galaxy role tests on:\n - Role: \e[36m${role}\e[0m\n - Platform: \e[36m${platform}\e[0m\n - Executor: \e[36m${exec}\e[0m\n"
 
 # Pull latest image
 set +e
