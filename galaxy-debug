@@ -129,6 +129,9 @@ PORTS=$(parse_ports "${PORT_FILE}")
 # Fire up instance
 CONT_ID=$(${exec} run --rm -v $(pwd):/repo ${PORTS} ${extra_flags} --detach "bviktor/ansible-systemd-${platform}")
 
+# Enable galaxy-rerun
+${exec} exec "${CONT_ID}" bash -c "echo -e '#!/bin/bash\nANSIBLE_ROLES_PATH=.. ANSIBLE_FORCE_COLOR=true ansible-playbook ${arguments[*]} tests/main.yml' > /bin/galaxy-rerun && chmod +x /bin/galaxy-rerun"
+
 # Install dependencies
 ${exec} exec "${CONT_ID}" bash -c "if [ -f requirements.yml ]; then ansible-galaxy role install --force -r requirements.yml -p ..; fi"
 
