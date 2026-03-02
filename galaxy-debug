@@ -4,6 +4,7 @@ set -eu
 
 export PORT_FILE='tests/port.list'
 export ENV_FILE='tests/env.list'
+export CAP_FILE='tests/cap.list'
 
 function find_exec ()
 {
@@ -26,13 +27,12 @@ function find_exec ()
     fi
 }
 
-function check_newline ()
+# if the given file doesn't have a trailing empty newline, add it
+function fix_newline ()
 {
-    if [[ $(tail -c1 "${1}" | wc -l) -gt 0 ]]
+    if [[ $(tail -c1 "${1}" | wc -l) -eq 0 ]]
     then
-        echo 1
-    else
-        echo 0
+        echo '' >> "${1}"
     fi
 }
 
@@ -46,10 +46,7 @@ function parse_ports ()
         return
     fi
 
-    if [ $(check_newline "${1}") -eq 0 ]
-    then
-        echo '' >> "${1}"
-    fi
+    fix_newline "${1}"
 
     while read -r line
     do
@@ -63,6 +60,32 @@ function parse_ports ()
     done < "${1}"
 
     echo "${port_str}"
+}
+
+function parse_caps ()
+{
+    cap_str=""
+
+    if [ ! -f "${1}" ]
+    then
+        echo "${cap_str}"
+        return
+    fi
+
+    fix_newline "${1}"
+
+    while read -r line
+    do
+        if [ ! -z "$cap_str" ]
+        then
+            cap_str+=" "
+        fi
+
+        [[ $line = \#* ]] || [ -z "$line" ] && continue # skip comments & empty lines
+        cap_str+="--cap-add=${line}"
+    done < "${1}"
+
+    echo "${cap_str}"
 }
 
 export exec=$(find_exec)
@@ -126,8 +149,11 @@ set -e
 # Check for port file
 PORTS=$(parse_ports "${PORT_FILE}")
 
+# Check for capabilities file
+CAPS=$(parse_caps "${CAP_FILE}")
+
 # Fire up instance
-CONT_ID=$(${exec} run --rm -v $(pwd):/repo ${PORTS} ${extra_flags} --detach "bviktor/ansible-systemd-${platform}")
+CONT_ID=$(${exec} run --rm -v $(pwd):/repo ${PORTS} ${CAPS} ${extra_flags} --detach "bviktor/ansible-systemd-${platform}")
 
 # Enable galaxy-rerun
 ${exec} exec "${CONT_ID}" bash -c "echo -e '#!/bin/bash\nANSIBLE_ROLES_PATH=.. ANSIBLE_FORCE_COLOR=true ansible-playbook ${arguments[*]} tests/main.yml' > /bin/galaxy-rerun && chmod +x /bin/galaxy-rerun"
