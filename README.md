@@ -22,7 +22,7 @@ For an example, please see:
 
 Enter the role root, then simply issue the `galaxy-debug` command.
 
-By default, `galaxy-debug` uses Fedora 37 as its platform. If you want to override this, use the `--platform` parameter.
+By default, `galaxy-debug` uses Fedora 43 as its platform. If you want to override this, use the `--platform` parameter.
 For a list of supported platforms, please see:
 
 [bviktor @ Docker Hub](https://hub.docker.com/u/bviktor)
