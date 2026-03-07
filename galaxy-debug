@@ -6,24 +6,53 @@ export PORT_FILE='tests/port.list'
 export ENV_FILE='tests/env.list'
 export CAP_FILE='tests/cap.list'
 
+function set_podman_aliases ()
+{
+    mkdir -p "${HOME}/.config/containers/registries.conf.d"
+    cat << EOF > "${HOME}/.config/containers/registries.conf.d/bviktor.conf"
+[aliases]
+  "bviktor/ansible-systemd-almalinux" = "docker.io/bviktor/ansible-systemd-almalinux"
+  "bviktor/ansible-systemd-archlinux" = "docker.io/bviktor/ansible-systemd-archlinux"
+  "bviktor/ansible-systemd-fedora" = "docker.io/bviktor/ansible-systemd-fedora"
+  "bviktor/ansible-systemd-lint" = "docker.io/bviktor/ansible-systemd-lint"
+  "bviktor/ansible-systemd-ubuntu" = "docker.io/bviktor/ansible-systemd-ubuntu"
+  "archlinux" = "docker.io/archlinux"
+EOF
+}
+
 function find_exec ()
 {
+    # Linux Podman
     RET=0
     podman --version &> /dev/null && RET=1 || true
 
     if [ ${RET} -eq 1 ]
     then
+        set_podman_aliases
         echo 'podman'
-    else
-        RET=0
-        docker --version &> /dev/null && RET=1 || true
+        return
+    fi
 
-        if [ ${RET} -eq 1 ]
-        then
-            echo 'docker'
-        else
-            echo ''
-        fi
+    # Podman Remote w/ Podman Desktop on Windows
+    RET=0
+    podman-remote-static-linux_amd64 --version &> /dev/null && RET=1 || true
+
+    if [ ${RET} -eq 1 ]
+    then
+        set_podman_aliases
+        echo 'podman-remote-static-linux_amd64'
+        return
+    fi
+
+    # Docker wherever
+    RET=0
+    docker --version &> /dev/null && RET=1 || true
+
+    if [ ${RET} -eq 1 ]
+    then
+        echo 'docker'
+    else
+        echo ''
     fi
 }
 
